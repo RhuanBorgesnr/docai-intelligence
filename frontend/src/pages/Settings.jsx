@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
 export default function Settings() {
@@ -13,6 +13,9 @@ export default function Settings() {
 
   useEffect(() => {
     loadProfile();
+    // Timeout de segurança - não ficar travado no loading
+    const timeout = setTimeout(() => setLoading(false), 3000);
+    return () => clearTimeout(timeout);
   }, []);
 
   const loadProfile = async () => {
@@ -21,6 +24,7 @@ export default function Settings() {
       setProfile(res.data);
     } catch (err) {
       console.error('Erro ao carregar perfil:', err);
+      // Continua com valores padrão
     } finally {
       setLoading(false);
     }
@@ -48,8 +52,11 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Configurações</h1>
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
       </div>
     );
   }

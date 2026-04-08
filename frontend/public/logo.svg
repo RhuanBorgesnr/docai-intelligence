@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon: Document with chart -->
+  <g transform="translate(5, 5)">
+    <!-- Document base -->
+    <rect x="0" y="0" width="28" height="36" rx="3" fill="url(#grad)"/>
+    <!-- Folded corner -->
+    <path d="M20 0 L28 8 L20 8 Z" fill="#1d4ed8"/>
+    <!-- Chart bars -->
+    <rect x="5" y="22" width="4" height="10" rx="1" fill="white" opacity="0.9"/>
+    <rect x="11" y="18" width="4" height="14" rx="1" fill="white" opacity="0.9"/>
+    <rect x="17" y="14" width="4" height="18" rx="1" fill="white" opacity="0.9"/>
+    <!-- AI dots -->
+    <circle cx="7" cy="10" r="2" fill="white" opacity="0.8"/>
+    <circle cx="14" cy="10" r="2" fill="white" opacity="0.8"/>
+    <circle cx="21" cy="10" r="2" fill="white" opacity="0.8"/>
+  </g>
+
+  <!-- Text: Findocia -->
+  <text x="45" y="32" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="700" fill="url(#grad)">
+    Findocia
+  </text>
+</svg>
