@@ -62,6 +62,7 @@ class DocumentListSerializer(serializers.ModelSerializer):
             "reference_date",
             "expiration_date",
             "days_until_expiration",
+            "extracted_metadata",
             "total_tokens",
             "created_at",
         )

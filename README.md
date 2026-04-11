@@ -1,17 +1,20 @@
-# DocAI Intelligence
+# Findocia
 
 **Plataforma de Inteligência Documental com IA**
 
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
+[![CI](https://github.com/RhuanBorgesnr/docai-intelligence/actions/workflows/ci.yml/badge.svg)](https://github.com/RhuanBorgesnr/docai-intelligence/actions/workflows/ci.yml)
+[![CD](https://github.com/RhuanBorgesnr/docai-intelligence/actions/workflows/cd.yml/badge.svg)](https://github.com/RhuanBorgesnr/docai-intelligence/actions/workflows/cd.yml)
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://python.org)
 [![Django](https://img.shields.io/badge/Django-5.0-green.svg)](https://djangoproject.com)
 [![React](https://img.shields.io/badge/React-18-61DAFB.svg)](https://reactjs.org)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![codecov](https://codecov.io/gh/RhuanBorgesnr/docai-intelligence/branch/main/graph/badge.svg)](https://codecov.io/gh/RhuanBorgesnr/docai-intelligence)
 
 ---
 
 ## Sobre o Projeto
 
-O **DocAI Intelligence** é uma plataforma que utiliza Inteligência Artificial para automatizar a análise de documentos empresariais, incluindo DREs, Balanços Patrimoniais, Contratos e Certidões.
+O **Findocia** é uma plataforma que utiliza Inteligência Artificial para automatizar a análise de documentos empresariais, incluindo DREs, Balanços Patrimoniais, Contratos e Certidões.
 
 ### Principais Funcionalidades
 

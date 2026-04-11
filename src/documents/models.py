@@ -46,6 +46,12 @@ class Document(models.Model):
         default=ProcessingStatus.PENDING
     )
 
+    # JSON field to store extracted metadata for any document type
+    extracted_metadata = models.JSONField(
+        null=True, blank=True,
+        help_text="Metadados extraídos automaticamente (NF, Certidão, etc.)"
+    )
+
     total_tokens = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 

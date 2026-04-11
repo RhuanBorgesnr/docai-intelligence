@@ -11,6 +11,7 @@ from ai.embeddings import generate_embedding
 from ai.extraction import extract_text_from_pdf
 from ai.financial_extraction import extract_financial_indicators
 from ai.clause_extraction import extract_contract_clauses
+from ai.extraction import extract_document_data
 from documents.models import Document, DocumentChunk, FinancialIndicator, ContractClause
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,13 @@ logger = logging.getLogger(__name__)
 FINANCIAL_DOC_TYPES = {Document.DocumentType.DRE, Document.DocumentType.BALANCE}
 # Document types that should trigger clause extraction
 CONTRACT_DOC_TYPES = {Document.DocumentType.CONTRACT}
+# Document types that should trigger metadata extraction
+METADATA_DOC_TYPES = {
+    Document.DocumentType.INVOICE,
+    Document.DocumentType.CERTIFICATE,
+    Document.DocumentType.REPORT,
+    Document.DocumentType.BALANCE,  # Balance also extracts specific metadata
+}
 
 
 @shared_task
@@ -66,6 +74,11 @@ def process_document(document_id: int) -> None:
         if document.document_type in CONTRACT_DOC_TYPES:
             logger.info("Extracting contract clauses for document %s", document_id)
             extract_and_save_clauses.delay(document_id)
+
+        # Extract metadata for Invoice, Certificate, Report documents
+        if document.document_type in METADATA_DOC_TYPES:
+            logger.info("Extracting metadata for document %s", document_id)
+            extract_and_save_metadata.delay(document_id)
 
         document.total_tokens = total_tokens
         document.processing_status = Document.ProcessingStatus.COMPLETED
@@ -317,3 +330,67 @@ def extract_and_save_clauses(document_id: int) -> dict:
 
     logger.info("Saved %d contract clauses for document %s", len(clauses), document_id)
     return {"status": "ok", "clauses_count": len(clauses)}
+
+
+@shared_task
+def extract_and_save_metadata(document_id: int) -> dict:
+    """
+    Extract metadata from documents (Invoice, Certificate, Report, Balance).
+    Saves extracted data to the document's extracted_metadata JSON field.
+
+    Args:
+        document_id: Primary key of the Document to process.
+
+    Returns:
+        Dict with extraction results.
+    """
+    document = Document.objects.get(pk=document_id)
+
+    if not document.extracted_text:
+        logger.warning("Document %s has no extracted text", document_id)
+        return {"status": "error", "message": "No extracted text"}
+
+    # Map document types to extractor names
+    type_mapping = {
+        Document.DocumentType.INVOICE: "invoice",
+        Document.DocumentType.CERTIFICATE: "certificate",
+        Document.DocumentType.REPORT: "report",
+        Document.DocumentType.BALANCE: "balance",
+    }
+
+    extractor_type = type_mapping.get(document.document_type)
+    if not extractor_type:
+        logger.warning("No extractor for document type %s", document.document_type)
+        return {"status": "error", "message": "No extractor for this type"}
+
+    metadata = extract_document_data(document.extracted_text, extractor_type)
+
+    if not metadata:
+        logger.info("No metadata extracted from document %s", document_id)
+        return {"status": "ok", "fields_count": 0}
+
+    # Convert date objects to strings for JSON serialization
+    for key, value in metadata.items():
+        if hasattr(value, 'isoformat'):
+            metadata[key] = value.isoformat()
+        elif isinstance(value, dict):
+            for k, v in value.items():
+                if hasattr(v, 'isoformat'):
+                    value[k] = v.isoformat()
+
+    # Save to document
+    document.extracted_metadata = metadata
+
+    # Auto-fill expiration date for certificates
+    if extractor_type == "certificate" and metadata.get("data_validade"):
+        from datetime import datetime
+        try:
+            if isinstance(metadata["data_validade"], str):
+                document.expiration_date = datetime.fromisoformat(metadata["data_validade"]).date()
+        except (ValueError, TypeError):
+            pass
+
+    document.save(update_fields=["extracted_metadata", "expiration_date"])
+
+    logger.info("Saved metadata with %d fields for document %s", len(metadata), document_id)
+    return {"status": "ok", "fields_count": len(metadata), "fields": list(metadata.keys())}
