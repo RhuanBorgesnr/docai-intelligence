@@ -37,9 +37,13 @@ RUN pip install --no-cache-dir /wheels/*
 # Copy application code
 COPY src/ /app/
 
+# Copy entrypoint script
+COPY docker/django/entrypoint.sh /app/entrypoint.sh
+
 # Create non-root user
 RUN useradd -m -u 1000 appuser && \
     mkdir -p /app/staticfiles /app/media && \
+    chmod +x /app/entrypoint.sh && \
     chown -R appuser:appuser /app
 
 USER appuser
@@ -49,4 +53,4 @@ RUN SECRET_KEY=build-time-secret DATABASE_URL=sqlite:///db.sqlite3 python manage
 
 EXPOSE 8000
 
-CMD ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
+ENTRYPOINT ["/app/entrypoint.sh"]
