@@ -12,7 +12,7 @@ class UserProfile(models.Model):
         NONE = "none", "Nenhum"
 
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)
 
     # Contact info
     phone = models.CharField(
