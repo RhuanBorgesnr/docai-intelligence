@@ -26,7 +26,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             email=validated_data.get('email', ''),
             password=validated_data['password']
         )
-        UserProfile.objects.create(user=user)
+        # UserProfile is created automatically via signal
         return user
 
 
