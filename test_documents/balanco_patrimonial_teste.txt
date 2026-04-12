@@ -1,0 +1,63 @@
+BALANCO PATRIMONIAL
+EMPRESA TESTE LTDA
+CNPJ: 12.345.678/0001-90
+EXERCICIO: 2025
+
+===========================================
+ATIVO
+===========================================
+
+ATIVO CIRCULANTE
+  Caixa e Equivalentes............... R$ 150.000,00
+  Contas a Receber................... R$ 320.000,00
+  Estoques........................... R$ 180.000,00
+  Outros Creditos.................... R$ 50.000,00
+  -------------------------------------------
+  TOTAL ATIVO CIRCULANTE............. R$ 700.000,00
+
+ATIVO NAO CIRCULANTE
+  Imobilizado........................ R$ 450.000,00
+  Intangivel......................... R$ 100.000,00
+  Investimentos...................... R$ 250.000,00
+  -------------------------------------------
+  TOTAL ATIVO NAO CIRCULANTE......... R$ 800.000,00
+
+-------------------------------------------
+TOTAL DO ATIVO....................... R$ 1.500.000,00
+===========================================
+
+===========================================
+PASSIVO
+===========================================
+
+PASSIVO CIRCULANTE
+  Fornecedores....................... R$ 180.000,00
+  Emprestimos CP..................... R$ 120.000,00
+  Obrigacoes Fiscais................. R$ 80.000,00
+  Obrigacoes Trabalhistas............ R$ 70.000,00
+  -------------------------------------------
+  TOTAL PASSIVO CIRCULANTE........... R$ 450.000,00
+
+PASSIVO NAO CIRCULANTE
+  Emprestimos LP..................... R$ 300.000,00
+  Provisoes.......................... R$ 50.000,00
+  -------------------------------------------
+  TOTAL PASSIVO NAO CIRCULANTE....... R$ 350.000,00
+
+PATRIMONIO LIQUIDO
+  Capital Social..................... R$ 500.000,00
+  Reservas de Lucros................. R$ 150.000,00
+  Lucros Acumulados.................. R$ 50.000,00
+  -------------------------------------------
+  TOTAL PATRIMONIO LIQUIDO........... R$ 700.000,00
+
+-------------------------------------------
+TOTAL DO PASSIVO..................... R$ 1.500.000,00
+===========================================
+
+INDICADORES FINANCEIROS
+  Liquidez Corrente: 1.56
+  Liquidez Seca: 1.16
+  Endividamento Geral: 53.33%
+  Receita Total: R$ 2.400.000,00
+  Lucro Liquido: R$ 240.000,00

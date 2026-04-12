@@ -153,7 +153,16 @@ class DocumentListCreateView(CreateAPIView, ListAPIView):
             company = None
 
         instance = serializer.save(company=company)
-        process_document.delay(instance.pk)
+
+        # Try to process async, skip if broker unavailable
+        try:
+            from django.conf import settings
+            if not getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+                process_document.delay(instance.pk)
+        except Exception:
+            # No broker available, document will be processed manually later
+            pass
+
         return Response(
             DocumentListSerializer(instance).data,
             status=status.HTTP_201_CREATED,
