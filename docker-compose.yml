@@ -30,7 +30,7 @@ services:
     build:
       context: .
       dockerfile: docker/django/Dockerfile
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 core.asgi:application"
     volumes:
       - ./src:/app
       - media_data:/app/media
@@ -39,12 +39,14 @@ services:
     env_file:
       - .env
     environment:
+      DJANGO_SETTINGS_MODULE: core.settings
       DB_HOST: postgres
       DB_NAME: plataforma_inteligencia
       DB_USER: postgres
       DB_PASSWORD: postgres
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CHANNELS_REDIS_URL: redis://redis:6379/1
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,12 +64,42 @@ services:
     env_file:
       - .env
     environment:
+      DJANGO_SETTINGS_MODULE: core.settings
       DB_HOST: postgres
       DB_NAME: plataforma_inteligencia
       DB_USER: postgres
       DB_PASSWORD: postgres
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CHANNELS_REDIS_URL: redis://redis:6379/1
+      # Telemetry: set OTEL_EXPORTER_OTLP_ENDPOINT to enable real traces
+      OTEL_SERVICE_NAME: plataforma-inteligencia-worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    command: celery -A core beat -l info -s /tmp/celerybeat-schedule
+    volumes:
+      - ./src:/app
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings
+      DB_HOST: postgres
+      DB_NAME: plataforma_inteligencia
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      OTEL_SERVICE_NAME: plataforma-inteligencia-beat
     depends_on:
       postgres:
         condition: service_healthy
