@@ -6,6 +6,7 @@ from orchestrator.consumers import (
     EventsConsumer,
     AgentStatusConsumer,
     NotificationsConsumer,
+    DocumentStatusConsumer,
 )
 
 websocket_urlpatterns = [
@@ -17,4 +18,6 @@ websocket_urlpatterns = [
     re_path(r"ws/agents/$", AgentStatusConsumer.as_asgi()),
     # User-specific notifications
     re_path(r"ws/notifications/$", NotificationsConsumer.as_asgi()),
+    # Document processing status (per-company, client-facing)
+    re_path(r"ws/documents/$", DocumentStatusConsumer.as_asgi()),
 ]

@@ -7,10 +7,13 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { auth } from '../services/api'
+import useDocumentStatus from '../hooks/useDocumentStatus'
 
 export default function ClientLayout({ children }) {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const user = auth.getUser()
+  const { connected, processingDocs } = useDocumentStatus()
+  const processingCount = Object.keys(processingDocs).length
 
   return (
     <div className="app">
@@ -22,6 +25,16 @@ export default function ClientLayout({ children }) {
               DocAI
             </span>
           </Link>
+          {/* Live connection indicator */}
+          <div className="flex items-center gap-1.5" title={connected ? 'Conectado em tempo real' : 'Conectando...'}>
+            <span className={`relative flex h-2 w-2 ${connected ? '' : 'opacity-50'}`}>
+              {connected && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${connected ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+            </span>
+            {processingCount > 0 && (
+              <span className="text-xs text-blue-600 font-medium">{processingCount} processando</span>
+            )}
+          </div>
         </div>
         <div className="ml-auto flex items-center gap-4">
           <Link to="/app" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</Link>

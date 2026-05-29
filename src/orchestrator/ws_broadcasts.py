@@ -178,6 +178,37 @@ def sync_broadcast_notification(user_id: int, payload: dict[str, Any]) -> None:
         logger.warning("Failed to broadcast notification: %s", e)
 
 
+def sync_broadcast_document_status(
+    company_id: int,
+    document_id: int,
+    status: str,
+    detail: dict[str, Any] | None = None,
+) -> None:
+    """
+    Broadcast document processing status to all connected clients of a company.
+
+    Status values: uploaded, extracting_text, chunking, embedding, analyzing_financial,
+                   analyzing_clauses, extracting_metadata, completed, failed
+    """
+    try:
+        channel_layer = get_channel_layer()
+        if channel_layer is None:
+            return
+        group_name = f"ws_documents_{company_id}"
+        message = {
+            "type": "document.status",
+            "payload": {
+                "type": "document.status",
+                "document_id": document_id,
+                "status": status,
+                "detail": detail or {},
+            },
+        }
+        async_to_sync(channel_layer.group_send)(group_name, message)
+    except Exception as e:
+        logger.warning("Failed to broadcast document status: %s", e)
+
+
 # ── Dashboard snapshot (called by consumer on request_snapshot) ───────────────
 
 async def get_dashboard_snapshot() -> dict[str, Any]:

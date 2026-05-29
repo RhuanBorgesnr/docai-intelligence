@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import api from '../services/api'
 import { Link } from 'react-router-dom'
 import OnboardingWizard from '../components/OnboardingWizard'
+import { ProcessingPanel } from '../components/ProcessingBadge'
+import useDocumentStatus from '../hooks/useDocumentStatus'
 
 const DOC_TYPES = [
   { value: '', label: 'Todos' },
@@ -34,6 +36,7 @@ export default function Dashboard(){
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem('docai_onboarding_complete')
   )
+  const { processingDocs } = useDocumentStatus()
 
   useEffect(()=>{
     loadData()
@@ -122,6 +125,9 @@ export default function Dashboard(){
         </div>
         <Link to="/app/upload" className="btn">+ Upload</Link>
       </div>
+
+      {/* Real-time processing status */}
+      <ProcessingPanel processingDocs={processingDocs} />
 
       {/* Stats Cards */}
       {stats && (

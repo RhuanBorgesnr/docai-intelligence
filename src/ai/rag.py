@@ -21,6 +21,16 @@ logger = logging.getLogger(__name__)
 MAX_CONTEXT_CHARACTERS = 4000  # limite do contexto para o prompt
 
 
+def _build_context(document_ids, question: str) -> str:
+    """Build RAG context from semantic search results. Used by both regular and streaming chat."""
+    chunks = semantic_search(document_ids=document_ids, query=question, limit=5)
+    chunks = [c for c in chunks if c.get("content") and c.get("content").strip()]
+    context = "\n\n".join([c["content"] for c in chunks])
+    if len(context) > MAX_CONTEXT_CHARACTERS:
+        context = context[:MAX_CONTEXT_CHARACTERS]
+    return context
+
+
 def build_prompt(context: str, question: str) -> str:
     return f"""
 Você é um assistente especializado em analisar documentos.

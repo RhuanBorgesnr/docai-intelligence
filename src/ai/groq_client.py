@@ -149,6 +149,89 @@ RESPOSTA:"""
     return response
 
 
+def chat_with_groq_stream(context: str, question: str, max_context: int = 4000):
+    """
+    Stream chat response from Groq's Llama 3 — yields chunks as they arrive.
+
+    Args:
+        context: Document context/chunks
+        question: User's question
+        max_context: Max chars for context
+
+    Yields:
+        String chunks of the response as they arrive from the API.
+    """
+    api_key = getattr(settings, 'GROQ_API_KEY', '')
+    if not api_key:
+        yield "Erro: API de IA não configurada."
+        return
+
+    if len(context) > max_context:
+        context = context[:max_context]
+
+    system_prompt = """Você é um assistente especializado em analisar documentos empresariais e financeiros.
+Responda de forma clara, objetiva e em português brasileiro.
+Use APENAS as informações do contexto fornecido.
+Se a informação não estiver no contexto, diga claramente que não encontrou."""
+
+    user_prompt = f"""CONTEXTO DOS DOCUMENTOS:
+{context}
+
+PERGUNTA DO USUÁRIO:
+{question}
+
+RESPOSTA:"""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": messages,
+        "temperature": 0.3,
+        "max_tokens": 1000,
+        "stream": True,
+    }
+
+    try:
+        response = requests.post(
+            GROQ_API_URL,
+            headers=headers,
+            json=payload,
+            timeout=60,
+            stream=True,
+        )
+        response.raise_for_status()
+
+        for line in response.iter_lines(decode_unicode=True):
+            if not line or not line.startswith("data: "):
+                continue
+            data_str = line[6:]  # Remove "data: " prefix
+            if data_str == "[DONE]":
+                break
+            try:
+                chunk = json.loads(data_str)
+                delta = chunk.get("choices", [{}])[0].get("delta", {})
+                content = delta.get("content", "")
+                if content:
+                    yield content
+            except (json.JSONDecodeError, IndexError, KeyError):
+                continue
+
+    except requests.exceptions.Timeout:
+        yield "\n\n[Erro: timeout na resposta da IA]"
+    except requests.exceptions.RequestException as e:
+        logger.error("Groq streaming failed: %s", e)
+        yield "\n\n[Erro ao consultar a IA]"
+
+
 def extract_with_groq(text: str, max_chars: int = 4000) -> Optional[dict]:
     """
     Extract financial indicators using Groq's Llama 3.

@@ -18,7 +18,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from ai.views import ChatAPIView
+from ai.views import ChatAPIView, ChatStreamAPIView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -56,6 +56,7 @@ urlpatterns = [
     path('api/integrations/', include('integrations.urls')),
     path('api/approvals/', include('approvals.urls')),
     path('api/chat/', ChatAPIView.as_view(), name='chat'),
+    path('api/chat/stream/', ChatStreamAPIView.as_view(), name='chat-stream'),
 
     # Notification webhooks (no /api/ prefix — external callbacks)
     path('', include('notifications.urls')),

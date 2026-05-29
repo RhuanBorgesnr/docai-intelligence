@@ -6,6 +6,7 @@ Channels:
 - EventsConsumer: broadcasts case events and state transitions
 - AgentStatusConsumer: broadcasts agent heartbeat and task progress
 - NotificationsConsumer: per-user notification delivery
+- DocumentStatusConsumer: per-company document processing updates (client-facing)
 
 All consumers use Redis channel layer groups for pub/sub.
 """
@@ -27,6 +28,10 @@ AGENTS_GROUP = "ws_agents"
 
 def _user_notifications_group(user_id: int) -> str:
     return f"ws_notifications_{user_id}"
+
+
+def _company_documents_group(company_id: int) -> str:
+    return f"ws_documents_{company_id}"
 
 
 # ── Dashboard Consumer ────────────────────────────────────────────────────────
@@ -149,3 +154,53 @@ class NotificationsConsumer(AsyncJsonWebsocketConsumer):
             notification_id = content.get("notification_id")
             if notification_id:
                 logger.info("Notification acked: %s", notification_id)
+
+
+# ── Document Status Consumer (Client-Facing) ─────────────────────────────────
+
+class DocumentStatusConsumer(AsyncJsonWebsocketConsumer):
+    """
+    Per-company document processing status updates.
+    Pushes real-time progress: uploaded → extracting → chunking → embedding → analyzing → done.
+
+    Requires authenticated connection (JWT token in query string).
+    Group: ws_documents_{company_id}
+    """
+
+    async def connect(self):
+        user = self.scope.get("user")
+        if isinstance(user, AnonymousUser) or not user:
+            await self.close(code=4001)
+            return
+
+        # Get company from user profile
+        from channels.db import database_sync_to_async
+
+        @database_sync_to_async
+        def get_company_id():
+            try:
+                return user.userprofile.company_id
+            except Exception:
+                return None
+
+        company_id = await get_company_id()
+        if not company_id:
+            await self.close(code=4003)
+            return
+
+        self.group_name = _company_documents_group(company_id)
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+        logger.info("WS Documents connected: user=%s company=%s", user.id, company_id)
+
+    async def disconnect(self, close_code):
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def document_status(self, event):
+        """Handle document.status messages — processing progress."""
+        await self.send_json(event["payload"])
+
+    async def receive_json(self, content, **kwargs):
+        # Read-only stream
+        pass

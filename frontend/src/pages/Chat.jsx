@@ -82,11 +82,77 @@ export default function Chat() {
     setMessages(m => [...m, userMsg])
     setInput('')
     setLoading(true)
+
+    // Try streaming first, fallback to regular endpoint
     try {
-      const res = await api.post('/chat/', { document_ids: [parseInt(id, 10)], question: userMsg.text })
-      setMessages(m => [...m, { role: 'ai', text: res.data.answer, docs: res.data.documents_used }])
+      const token = localStorage.getItem('access_token')
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+      const response = await fetch(`${apiUrl}/chat/stream/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ document_ids: [parseInt(id, 10)], question: userMsg.text }),
+      })
+
+      if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
+        // Streaming response — show text as it arrives
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let fullText = ''
+
+        // Add placeholder message that we'll update
+        setMessages(m => [...m, { role: 'ai', text: '', streaming: true }])
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n')
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue
+            const data = line.slice(6)
+            if (data === '[DONE]') break
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.chunk) {
+                fullText += parsed.chunk
+                setMessages(m => {
+                  const updated = [...m]
+                  updated[updated.length - 1] = { role: 'ai', text: fullText, streaming: true }
+                  return updated
+                })
+              }
+            } catch {}
+          }
+        }
+
+        // Mark streaming complete
+        setMessages(m => {
+          const updated = [...m]
+          updated[updated.length - 1] = { role: 'ai', text: fullText, streaming: false }
+          return updated
+        })
+      } else {
+        // Non-streaming fallback (Groq not available, or error)
+        const data = await response.json()
+        if (data.answer) {
+          setMessages(m => [...m, { role: 'ai', text: data.answer }])
+        } else {
+          setMessages(m => [...m, { role: 'ai', text: data.error || 'Erro ao consultar o servidor.' }])
+        }
+      }
     } catch (err) {
-      setMessages(m => [...m, { role: 'ai', text: 'Erro ao consultar o servidor.' }])
+      // Complete fallback — use regular endpoint
+      try {
+        const res = await api.post('/chat/', { document_ids: [parseInt(id, 10)], question: userMsg.text })
+        setMessages(m => [...m, { role: 'ai', text: res.data.answer }])
+      } catch {
+        setMessages(m => [...m, { role: 'ai', text: 'Erro ao consultar o servidor.' }])
+      }
     } finally { setLoading(false) }
   }
 
@@ -166,14 +232,28 @@ export default function Chat() {
             <div className="space-y-4">
               {messages.map((msg, i) => (
                 <div key={i} className={msg.role === 'user' ? 'text-right' : ''}>
-                  <div className={msg.role === 'user' ? 'inline-block bg-primary text-white px-4 py-2 rounded-lg' : 'inline-block bg-gray-100 px-4 py-2 rounded-lg'}>
-                    <div>{msg.text}</div>
+                  <div className={msg.role === 'user' 
+                    ? 'inline-block bg-primary text-white px-4 py-2 rounded-lg max-w-[80%]' 
+                    : 'inline-block bg-gray-100 px-4 py-2 rounded-lg max-w-[80%] text-left'
+                  }>
+                    <div className="whitespace-pre-wrap">{msg.text}{msg.streaming && <span className="inline-block w-2 h-4 bg-blue-500 ml-0.5 animate-pulse rounded-sm" />}</div>
                   </div>
                   {msg.docs && msg.docs.length > 0 && (
                     <div className="text-xs text-gray-500 mt-1">Trechos usados: {msg.docs.join(', ')}</div>
                   )}
                 </div>
               ))}
+              {loading && messages[messages.length - 1]?.role === 'user' && (
+                <div>
+                  <div className="inline-block bg-gray-100 px-4 py-2 rounded-lg">
+                    <div className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}} />
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}} />
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

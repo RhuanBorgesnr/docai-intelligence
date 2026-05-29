@@ -40,17 +40,30 @@ def process_document(document_id: int) -> None:
         document_id: Primary key of the Document to process.
     """
     document = Document.objects.get(pk=document_id)
+    company_id = document.company_id
+
+    def _broadcast(status, detail=None):
+        """Broadcast processing status via WebSocket."""
+        try:
+            from orchestrator.ws_broadcasts import sync_broadcast_document_status
+            if company_id:
+                sync_broadcast_document_status(company_id, document_id, status, detail)
+        except Exception:
+            pass  # Non-critical, don't fail processing
 
     try:
         document.processing_status = Document.ProcessingStatus.PROCESSING
         document.save(update_fields=["processing_status"])
+        _broadcast("extracting_text", {"step": 1, "total_steps": 4, "message": "Extraindo texto do documento..."})
 
         extracted_text = extract_text_from_pdf(document.file.path)
         document.extracted_text = extracted_text
         document.save(update_fields=["extracted_text"])
+        _broadcast("chunking", {"step": 2, "total_steps": 4, "message": "Segmentando conteúdo..."})
 
         chunks = chunk_text(extracted_text)
         total_tokens = sum(c.token_count for c in chunks)
+        _broadcast("embedding", {"step": 3, "total_steps": 4, "message": "Gerando embeddings para busca semântica...", "chunks": len(chunks)})
 
         with transaction.atomic():
             DocumentChunk.objects.filter(document=document).delete()
@@ -67,27 +80,29 @@ def process_document(document_id: int) -> None:
 
         # Extract financial indicators for DRE/Balance documents
         if document.document_type in FINANCIAL_DOC_TYPES:
-            logger.info("Extracting financial indicators for document %s", document_id)
+            _broadcast("analyzing_financial", {"step": 4, "total_steps": 4, "message": "Extraindo indicadores financeiros com IA..."})
             extract_and_save_indicators.delay(document_id)
 
         # Extract clauses for Contract documents
         if document.document_type in CONTRACT_DOC_TYPES:
-            logger.info("Extracting contract clauses for document %s", document_id)
+            _broadcast("analyzing_clauses", {"step": 4, "total_steps": 4, "message": "Identificando cláusulas e riscos..."})
             extract_and_save_clauses.delay(document_id)
 
         # Extract metadata for Invoice, Certificate, Report documents
         if document.document_type in METADATA_DOC_TYPES:
-            logger.info("Extracting metadata for document %s", document_id)
+            _broadcast("extracting_metadata", {"step": 4, "total_steps": 4, "message": "Extraindo metadados..."})
             extract_and_save_metadata.delay(document_id)
 
         document.total_tokens = total_tokens
         document.processing_status = Document.ProcessingStatus.COMPLETED
         document.save(update_fields=["total_tokens", "processing_status"])
+        _broadcast("completed", {"message": "Documento processado com sucesso!", "tokens": total_tokens, "chunks": len(chunks)})
 
     except Exception:
         logger.exception("Document processing failed: document_id=%s", document_id)
         document.processing_status = Document.ProcessingStatus.FAILED
         document.save(update_fields=["processing_status"])
+        _broadcast("failed", {"message": "Falha no processamento. Tente novamente."})
 
 
 @shared_task
