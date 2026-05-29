@@ -47,9 +47,48 @@ docker/nginx/ssl/*.key
 backups/*.sql
 backups/*.sql.gz
 
+# Logs
+logs/
+
+# Cloudflared
+cloudflared/
+.cloudflared/
+
+# Auto-generated scripts
+scripts/_autostart.ps1
+
 # Misc
 *.bak
 *.tmp
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Documentation (internal/sales - not tracked)
+docs/
+00_START_HERE.md
+FINAL_SUMMARY.txt
+JARVIS_ORCHESTRATOR_README.md
+QUICK_REFERENCE_INDEX.md
+SERVER_DEPLOY_GUIDE.md
+PROPOSTA_COMERCIAL.md
+PROPOSTA_CUSTOS_INFRAESTRUTURA.md
+SPRINT*.md
+SPRINT*.txt
+SPRINT2_4_ROADMAP.md
+
+# Word docs
+*.docx
+
+# Scripts (server/infra specific)
+scripts/
+
+# Server/Production configs
+.env.server
+docker-compose.server.yml
+docker-compose.prod.yml
+docker/django/Dockerfile.prod
+docker/nginx/server.conf
+docker/nginx/conf.d/
+docker/scripts/
+docker/nginx/ssl/
