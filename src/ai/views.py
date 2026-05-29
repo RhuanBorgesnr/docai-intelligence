@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.throttling import ScopedRateThrottle
 from drf_spectacular.utils import extend_schema, OpenApiExample
 
 from ai.serializers import ChatRequestSerializer
@@ -80,6 +81,8 @@ A IA analisa o conteúdo dos documentos selecionados e responde contextualmente.
 )
 class ChatAPIView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'ai'
 
     def post(self, request):
         # Check AI quota

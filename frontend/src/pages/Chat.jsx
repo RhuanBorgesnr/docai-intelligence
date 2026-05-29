@@ -91,7 +91,14 @@ export default function Chat() {
   }
 
   if (loadingDoc) {
-    return <div className="p-6 text-gray-400">Carregando documento...</div>
+    return (
+      <div className="max-w-5xl mx-auto animate-pulse">
+        <div className="h-4 w-16 bg-gray-200 rounded mb-3"></div>
+        <div className="h-6 w-64 bg-gray-200 rounded mb-2"></div>
+        <div className="h-4 w-40 bg-gray-100 rounded mb-6"></div>
+        <div className="h-[400px] bg-gray-100 rounded-lg"></div>
+      </div>
+    )
   }
 
   if (!doc) {

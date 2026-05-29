@@ -1,6 +1,7 @@
 import React, { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { auth } from './services/api'
+import { ToastProvider } from './components/Toast'
 
 // Client product pages (SaaS — visible to all authenticated users)
 import Login from './pages/Login'
@@ -58,6 +59,7 @@ function Ops({ children }) {
 
 export default function App() {
   return (
+    <ToastProvider>
     <Routes>
       {/* Public */}
       <Route path="/login" element={<Login />} />
@@ -105,6 +107,7 @@ export default function App() {
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </ToastProvider>
   )
 }
 

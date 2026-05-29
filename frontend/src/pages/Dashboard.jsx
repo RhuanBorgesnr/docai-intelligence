@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import api from '../services/api'
 import { Link } from 'react-router-dom'
+import OnboardingWizard from '../components/OnboardingWizard'
 
 const DOC_TYPES = [
   { value: '', label: 'Todos' },
@@ -29,12 +30,17 @@ export default function Dashboard(){
   const [filter, setFilter] = useState('')
   const [expiringDocs, setExpiringDocs] = useState([])
   const [financial, setFinancial] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem('docai_onboarding_complete')
+  )
 
   useEffect(()=>{
     loadData()
   },[filter])
 
   async function loadData(){
+    setLoading(true)
     try {
       const params = filter ? `?document_type=${filter}` : ''
       const [docsRes, statsRes, expiringRes, financialRes] = await Promise.all([
@@ -49,6 +55,8 @@ export default function Dashboard(){
       setFinancial(financialRes.data)
     } catch {
       setDocs([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -69,8 +77,44 @@ export default function Dashboard(){
 
   const hasFinancialData = financial && financial.docs_with_financial_data > 0
 
+  if (loading) {
+    return (
+      <div className="animate-pulse">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="h-7 w-48 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 w-64 bg-gray-100 rounded"></div>
+          </div>
+          <div className="h-10 w-24 bg-gray-200 rounded"></div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_,i) => (
+            <div key={i} className="card text-center py-6">
+              <div className="h-8 w-12 bg-gray-200 rounded mx-auto mb-2"></div>
+              <div className="h-3 w-20 bg-gray-100 rounded mx-auto"></div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-3">
+          {[...Array(5)].map((_,i) => (
+            <div key={i} className="card flex items-center gap-4 py-4">
+              <div className="h-10 w-10 bg-gray-200 rounded"></div>
+              <div className="flex-1">
+                <div className="h-4 w-48 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 w-32 bg-gray-100 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
+      {showOnboarding && (
+        <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
+      )}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold">Meus Documentos</h1>
@@ -188,7 +232,12 @@ export default function Dashboard(){
       {/* Document List */}
       <div className="grid grid-cols-1 gap-4">
         {docs.length===0 && (
-          <div className="card text-gray-500">Nenhum documento encontrado. Faça upload para começar.</div>
+          <div className="card text-center py-12">
+            <div className="text-5xl mb-4">📄</div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Nenhum documento ainda</h3>
+            <p className="text-gray-500 mb-4">Envie seu primeiro documento para começar a análise com IA</p>
+            <Link to="/app/upload" className="btn inline-block">+ Enviar Documento</Link>
+          </div>
         )}
 
         {docs.map(d=> (

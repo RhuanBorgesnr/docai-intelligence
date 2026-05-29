@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import api from '../services/api'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '../components/Toast'
 
 const DOC_TYPES = [
   { value: 'other', label: 'Outro' },
@@ -19,25 +20,36 @@ export default function Upload(){
   const [referenceDate, setReferenceDate] = useState('')
   const [expirationDate, setExpirationDate] = useState('')
   const [loading, setLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
   const navigate = useNavigate()
+  const toast = useToast()
 
   async function handleSubmit(e){
     e.preventDefault()
-    if(!file) return alert('Selecione um arquivo')
+    if(!file) return toast.warning('Selecione um arquivo')
 
     setLoading(true)
+    setProgress(0)
     const formData = new FormData()
-    formData.append('title', title)
+    formData.append('title', title || file.name.replace(/\.[^.]+$/, ''))
     formData.append('file', file)
     formData.append('document_type', documentType)
     if (referenceDate) formData.append('reference_date', referenceDate)
     if (expirationDate) formData.append('expiration_date', expirationDate)
 
     try{
-      await api.post('/documents/', formData, { headers: {'Content-Type': 'multipart/form-data'} })
-      navigate('/')
+      await api.post('/documents/', formData, {
+        headers: {'Content-Type': 'multipart/form-data'},
+        onUploadProgress: (e) => {
+          const pct = Math.round((e.loaded * 100) / e.total)
+          setProgress(pct)
+        }
+      })
+      toast.success('Documento enviado! A análise com IA está em andamento.')
+      setTimeout(() => navigate('/app'), 1500)
     }catch(err){
-      alert('Falha no upload')
+      const msg = err.response?.data?.error || 'Falha no upload. Tente novamente.'
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -97,18 +109,48 @@ export default function Upload(){
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Arquivo PDF</label>
-            <input
-              className="input w-full"
-              type="file"
-              accept=".pdf"
-              onChange={(e)=>setFile(e.target.files[0])}
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Arquivo</label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary/50 transition cursor-pointer"
+              onClick={() => document.getElementById('file-input').click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { e.preventDefault(); setFile(e.dataTransfer.files[0]) }}
+            >
+              <input
+                id="file-input"
+                className="hidden"
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.txt"
+                onChange={(e)=>setFile(e.target.files[0])}
+              />
+              {file ? (
+                <div>
+                  <span className="text-2xl">📄</span>
+                  <p className="text-sm font-medium text-gray-700 mt-2">{file.name}</p>
+                  <p className="text-xs text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-3xl">⬆️</span>
+                  <p className="text-sm text-gray-600 mt-2">Clique ou arraste o arquivo aqui</p>
+                  <p className="text-xs text-gray-400 mt-1">PDF, imagem ou texto (máx. 20MB)</p>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Progress bar */}
+          {loading && (
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-primary h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          )}
 
           <div className="flex justify-end pt-2">
             <button className="btn" disabled={loading}>
-              {loading ? 'Enviando...' : 'Upload'}
+              {loading ? `Enviando... ${progress}%` : 'Enviar Documento'}
             </button>
           </div>
         </form>

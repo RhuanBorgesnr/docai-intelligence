@@ -19,14 +19,16 @@ logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
-FRONTEND_URL = settings.CSRF_TRUSTED_ORIGINS[0] if settings.CSRF_TRUSTED_ORIGINS else 'http://localhost:3000'
+
+def _get_frontend_url():
+    return getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
 
 
 def send_verification_email(user) -> bool:
     """Send email verification link to user."""
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    verification_url = f"{FRONTEND_URL}/verify-email/{uid}/{token}"
+    verification_url = f"{_get_frontend_url()}/verify-email/{uid}/{token}"
 
     subject = "DocAI — Confirme seu email"
     message = (
@@ -79,7 +81,7 @@ def send_password_reset_email(email: str) -> bool:
 
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    reset_url = f"{FRONTEND_URL}/reset-password/{uid}/{token}"
+    reset_url = f"{_get_frontend_url()}/reset-password/{uid}/{token}"
 
     subject = "DocAI — Redefinir senha"
     message = (

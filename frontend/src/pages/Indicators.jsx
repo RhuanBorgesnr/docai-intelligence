@@ -96,7 +96,20 @@ export default function Indicators() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Carregando...</div>
+    return (
+      <div className="animate-pulse max-w-4xl mx-auto">
+        <div className="h-4 w-16 bg-gray-200 rounded mb-4"></div>
+        <div className="h-7 w-56 bg-gray-200 rounded mb-6"></div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {[...Array(6)].map((_,i) => (
+            <div key={i} className="card py-6">
+              <div className="h-6 w-24 bg-gray-200 rounded mb-2"></div>
+              <div className="h-4 w-32 bg-gray-100 rounded"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (!data) {

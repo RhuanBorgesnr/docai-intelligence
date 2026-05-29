@@ -110,7 +110,13 @@ export default function Charts() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Carregando...</div>
+    return (
+      <div className="animate-pulse">
+        <div className="h-7 w-48 bg-gray-200 rounded mb-6"></div>
+        <div className="h-[300px] bg-gray-100 rounded-lg mb-6"></div>
+        <div className="h-[300px] bg-gray-100 rounded-lg"></div>
+      </div>
+    )
   }
 
   const combinedData = buildCombinedData()
