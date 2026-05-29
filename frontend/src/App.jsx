@@ -1,7 +1,13 @@
-import React, { useEffect, useState } from 'react'
-import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
+import React, { lazy, Suspense } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { auth } from './services/api'
+
+// Client product pages (SaaS — visible to all authenticated users)
 import Login from './pages/Login'
+import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import Upload from './pages/Upload'
 import Chat from './pages/Chat'
@@ -10,183 +16,103 @@ import Charts from './pages/Charts'
 import Compare from './pages/Compare'
 import Clauses from './pages/Clauses'
 import Settings from './pages/Settings'
+import Integrations from './pages/Integrations'
 
-// Protected Route Component
+// Ops internal pages (visible only to staff/ops users)
+import OpsCockpit from './pages/OpsCockpit'
+import Leads from './pages/Leads'
+import Pipeline from './pages/Pipeline'
+import JarvisPanel from './pages/JarvisPanel'
+import Operations from './pages/Operations'
+import OpsAgentTeam from './pages/OpsAgentTeam'
+import OpsApprovals from './pages/OpsApprovals'
+
+// Layouts
+import ClientLayout from './components/ClientLayout'
+import OpsLayout, { OpsGuard } from './components/OpsLayout'
+
+// Lazy pages
+const LeadDetail = lazy(() => import('./pages/LeadDetail'))
+
+// ── Guards ────────────────────────────────────────────────────────────────────
+
 function ProtectedRoute({ children }) {
   const location = useLocation()
-
   if (!auth.isAuthenticated()) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
-
   return children
 }
 
-// Layout with Navigation
-function Layout({ children }) {
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const user = auth.getUser()
-
-  const handleLogout = () => {
-    auth.logout()
-  }
-
-  return (
-    <div className="app">
-      <nav className="topnav">
-        <div className="flex items-center gap-4">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/icon.svg" alt="Findocia" className="w-8 h-8" />
-            <span className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Findocia
-            </span>
-          </Link>
-        </div>
-        <div className="ml-auto flex items-center gap-4">
-          <Link to="/charts" className="text-sm text-gray-600 hover:text-gray-900">Gráficos</Link>
-          <Link to="/compare" className="text-sm text-gray-600 hover:text-gray-900">Comparar</Link>
-          <Link to="/upload" className="text-sm text-gray-600 hover:text-gray-900">Upload</Link>
-          <Link to="/settings" className="text-sm text-gray-600 hover:text-gray-900">Configurações</Link>
-
-          {/* User Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-            >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
-                  {user?.username?.charAt(0)?.toUpperCase() || 'U'}
-                </span>
-              </div>
-              <span className="text-sm text-gray-700 hidden sm:block">
-                {user?.username || 'Usuário'}
-              </span>
-              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-900">{user?.username}</p>
-                  <p className="text-xs text-gray-500">Conectado</p>
-                </div>
-                <Link
-                  to="/settings"
-                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  onClick={() => setShowUserMenu(false)}
-                >
-                  Configurações
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  Sair
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
-
-      <main>{children}</main>
-    </div>
-  )
+/** Shorthand: ProtectedRoute + ClientLayout wrapper */
+function Client({ children }) {
+  return <ProtectedRoute><ClientLayout>{children}</ClientLayout></ProtectedRoute>
 }
+
+/** Shorthand: OpsGuard + OpsLayout wrapper */
+function Ops({ children }) {
+  return <OpsGuard><OpsLayout>{children}</OpsLayout></OpsGuard>
+}
+
+// ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
   return (
     <Routes>
-      {/* Public route */}
+      {/* Public */}
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password/:uid/:token" element={<ResetPassword />} />
+      <Route path="/verify-email/:uid/:token" element={<VerifyEmail />} />
 
-      {/* Protected routes */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/upload"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Upload />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/chat/:id"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Chat />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/indicators/:id"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Indicators />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/charts"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Charts />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/compare"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Compare />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/clauses/:id"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Clauses />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Settings />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+      {/* ─── Client product (/app/*) ─────────────────────────────────────── */}
+      <Route path="/app"              element={<Client><Dashboard /></Client>} />
+      <Route path="/app/upload"       element={<Client><Upload /></Client>} />
+      <Route path="/app/chat/:id"     element={<Client><Chat /></Client>} />
+      <Route path="/app/indicators/:id" element={<Client><Indicators /></Client>} />
+      <Route path="/app/charts"       element={<Client><Charts /></Client>} />
+      <Route path="/app/compare"      element={<Client><Compare /></Client>} />
+      <Route path="/app/clauses/:id"  element={<Client><Clauses /></Client>} />
+      <Route path="/app/settings"     element={<Client><Settings /></Client>} />
+      <Route path="/app/integrations" element={<Client><Integrations /></Client>} />
 
-      {/* Redirect unknown routes */}
+      {/* ─── Ops internal (/ops/*) ───────────────────────────────────────── */}
+      <Route path="/ops"              element={<Ops><OpsCockpit /></Ops>} />
+      <Route path="/ops/leads"        element={<Ops><Leads /></Ops>} />
+      <Route path="/ops/leads/:leadId" element={<Ops><Suspense fallback={<div className="p-6 text-gray-400">Carregando…</div>}><LeadDetail /></Suspense></Ops>} />
+      <Route path="/ops/pipeline"     element={<Ops><Pipeline /></Ops>} />
+      <Route path="/ops/theo"         element={<Ops><JarvisPanel /></Ops>} />
+      <Route path="/ops/operations"   element={<Ops><Operations /></Ops>} />
+      <Route path="/ops/team"          element={<Ops><OpsAgentTeam /></Ops>} />
+      <Route path="/ops/approvals"     element={<Ops><OpsApprovals /></Ops>} />
+
+
+      {/* ─── Redirects ───────────────────────────────────────────────────── */}
+      {/* Root → /app for clients, /ops for staff (simplified: → /app always) */}
+      <Route path="/" element={<RootRedirect />} />
+
+      {/* Legacy routes → new locations */}
+      <Route path="/upload"     element={<Navigate to="/app/upload" replace />} />
+      <Route path="/charts"     element={<Navigate to="/app/charts" replace />} />
+      <Route path="/compare"    element={<Navigate to="/app/compare" replace />} />
+      <Route path="/settings"   element={<Navigate to="/app/settings" replace />} />
+      <Route path="/leads"      element={<Navigate to="/ops/leads" replace />} />
+      <Route path="/pipeline"   element={<Navigate to="/ops/pipeline" replace />} />
+      <Route path="/jarvis"     element={<Navigate to="/ops/theo" replace />} />
+      <Route path="/operations" element={<Navigate to="/ops/operations" replace />} />
+
+      {/* Catch-all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
+}
+
+/** Root / redirects staff → /ops, others → /app */
+function RootRedirect() {
+  const user = auth.getUser()
+  if (user && user.is_staff !== false) {
+    return <Navigate to="/ops" replace />
+  }
+  return <Navigate to="/app" replace />
 }

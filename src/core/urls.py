@@ -51,7 +51,14 @@ urlpatterns = [
     path('api/documents/', include('documents.urls')),
     path('api/search/', include('search.urls')),
     path('api/accounts/', include('accounts.urls')),
+    path('api/orchestrator/', include('orchestrator.urls')),
+    path('api/commercial/', include('commercial.urls')),
+    path('api/integrations/', include('integrations.urls')),
+    path('api/approvals/', include('approvals.urls')),
     path('api/chat/', ChatAPIView.as_view(), name='chat'),
+
+    # Notification webhooks (no /api/ prefix — external callbacks)
+    path('', include('notifications.urls')),
 ]
 
 if settings.DEBUG:

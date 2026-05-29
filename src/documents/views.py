@@ -143,6 +143,16 @@ class DocumentListCreateView(CreateAPIView, ListAPIView):
         return DocumentListSerializer
 
     def create(self, request, *args, **kwargs):
+        # Check document quota
+        tenant = getattr(request, 'tenant', None)
+        if tenant:
+            allowed, message = tenant.check_quota('document')
+            if not allowed:
+                return Response(
+                    {"error": message, "code": "quota_exceeded"},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         # Assign company from user's profile when available

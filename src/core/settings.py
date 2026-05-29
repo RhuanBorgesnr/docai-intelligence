@@ -17,6 +17,15 @@ from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load .env from project root (one level above src/) — optional for Docker (env_file handles it)
+try:
+    from dotenv import load_dotenv
+    _env_path = BASE_DIR.parent / '.env'
+    if _env_path.exists():
+        load_dotenv(_env_path)
+except ImportError:
+    pass
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -35,14 +44,19 @@ HF_MODEL_ID = os.getenv("HF_MODEL_ID")
 # Groq API (free tier - Llama 3 70B)
 GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
 
+# LLM Provider: "groq" (default, free), "openai", "anthropic"
+LLM_PROVIDER = os.environ.get('LLM_PROVIDER', 'groq')
+
 # Application definition
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
@@ -52,6 +66,14 @@ INSTALLED_APPS = [
     'ai',
     'accounts',
     'companies',
+    'orchestrator',
+    'agent_runtime',
+    'approvals',
+    'memory',
+    'notifications',
+    'audit',
+    'commercial',
+    'integrations',
 ]
 
 MIDDLEWARE = [
@@ -63,6 +85,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'companies.middleware.TenantMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -83,6 +106,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = 'core.asgi.application'
 
 
 # Database (PostgreSQL + pgvector required for vector embeddings)
@@ -115,11 +139,14 @@ if DATABASE_URL:
             }
         }
 else:
-    # SQLite for local development (no PostgreSQL required)
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME", "plataforma_inteligencia"),
+            "USER": os.environ.get("DB_USER", "postgres"),
+            "PASSWORD": os.environ.get("DB_PASSWORD", "postgres"),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
         }
     }
 
@@ -164,11 +191,28 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Django Channels (WebSocket)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [os.environ.get('CHANNELS_REDIS_URL', 'redis://localhost:6379/1')],
+        },
+    },
+}
+
 # Celery
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://localhost:6379/0')
 # Run tasks synchronously if no broker available (for Render free tier)
 CELERY_TASK_ALWAYS_EAGER = os.environ.get('CELERY_TASK_ALWAYS_EAGER', 'False').lower() == 'true'
+
+# Webhook HMAC secrets — per source. Set via env vars in production.
+# Example: WEBHOOK_HMAC_SECRET_TYPEFORM=your_secret
+WEBHOOK_HMAC_SECRETS = {
+    source: os.environ.get(f'WEBHOOK_HMAC_SECRET_{source.upper()}', '')
+    for source in ['typeform', 'hubspot', 'rdstation', 'meta_ads', 'google_forms']
+}
 
 # File upload limits (5MB max for free tier)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB
@@ -190,6 +234,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'TOKEN_OBTAIN_SERIALIZER': 'accounts.serializers.CustomTokenObtainPairSerializer',
 }
 
 # Swagger/OpenAPI settings (drf-spectacular)
@@ -265,3 +310,8 @@ TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
 TWILIO_WHATSAPP_FROM = os.environ.get('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886')  # Twilio sandbox number
 WHATSAPP_ENABLED = os.environ.get('WHATSAPP_ENABLED', 'False') == 'True'
+
+# Telegram Bot settings
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+TELEGRAM_ENABLED = os.environ.get('TELEGRAM_ENABLED', 'False') == 'True'
+TELEGRAM_WEBHOOK_URL = os.environ.get('TELEGRAM_WEBHOOK_URL', '')  # e.g. https://yourdomain.com/webhooks/telegram/

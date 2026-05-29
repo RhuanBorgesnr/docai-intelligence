@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { auth } from '../services/api'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -111,10 +111,25 @@ export default function Login() {
                 'Entrar'
               )}
             </button>
+
+            <div className="flex items-center justify-between text-sm">
+              <Link to="/forgot-password" className="text-blue-600 hover:underline">
+                Esqueceu a senha?
+              </Link>
+            </div>
           </form>
 
           {/* Footer */}
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Não tem conta?{' '}
+              <Link to="/register" className="text-blue-600 hover:underline font-medium">
+                Criar conta grátis
+              </Link>
+            </p>
+          </div>
+
+          <div className="mt-4 text-center">
             <p className="text-xs text-gray-400">
               Seus dados estão protegidos com criptografia
             </p>

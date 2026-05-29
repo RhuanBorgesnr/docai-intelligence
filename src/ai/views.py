@@ -82,6 +82,16 @@ class ChatAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        # Check AI quota
+        tenant = getattr(request, 'tenant', None)
+        if tenant:
+            allowed_quota, quota_msg = tenant.check_quota('ai_query')
+            if not allowed_quota:
+                return Response(
+                    {"error": quota_msg, "code": "quota_exceeded"},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+
         serializer = ChatRequestSerializer(data=request.data)
 
         if not serializer.is_valid():
@@ -101,5 +111,9 @@ class ChatAPIView(APIView):
         allowed_ids = list(allowed)
 
         result = generate_answer(allowed_ids, question)
+
+        # Increment AI usage counter
+        if tenant:
+            tenant.increment_ai_usage()
 
         return Response(result, status=status.HTTP_200_OK)
