@@ -75,7 +75,7 @@ export default function Clauses() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link to="/" className="text-sm text-primary hover:underline">&larr; Voltar</Link>
+          <Link to="/app" className="text-sm text-primary hover:underline">&larr; Voltar</Link>
           <h1 className="text-2xl font-semibold mt-1">Cláusulas do Contrato</h1>
           <p className="text-sm text-gray-500">{data.document_title || `Documento ${id}`}</p>
         </div>
@@ -87,7 +87,7 @@ export default function Clauses() {
           >
             {extracting ? 'Extraindo...' : 'Re-extrair'}
           </button>
-          <Link to={`/chat/${id}`} className="btn">Chat</Link>
+          <Link to={`/app/chat/${id}`} className="btn">Chat</Link>
         </div>
       </div>
 

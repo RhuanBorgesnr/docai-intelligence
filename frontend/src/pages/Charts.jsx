@@ -120,7 +120,7 @@ export default function Charts() {
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link to="/" className="text-sm text-primary hover:underline">&larr; Voltar</Link>
+          <Link to="/app" className="text-sm text-primary hover:underline">&larr; Voltar</Link>
           <h1 className="text-2xl font-semibold mt-1">Evolução Financeira</h1>
           <p className="text-sm text-gray-500">Acompanhe a evolução dos indicadores ao longo do tempo</p>
         </div>
@@ -132,7 +132,7 @@ export default function Charts() {
           <p className="text-sm text-gray-400">
             Faça upload de documentos DRE ou Balanço com data de referência para visualizar os gráficos.
           </p>
-          <Link to="/upload" className="btn mt-4">Fazer Upload</Link>
+          <Link to="/app/upload" className="btn mt-4">Fazer Upload</Link>
         </div>
       ) : (
         <>
@@ -291,7 +291,7 @@ export default function Charts() {
                           <td className="py-2">{item.period_label}</td>
                           <td className="py-2 font-medium">{formatCurrency(item.value)}</td>
                           <td className="py-2">
-                            <Link to={`/indicators/${item.document_id}`} className="text-primary hover:underline">
+                            <Link to={`/app/indicators/${item.document_id}`} className="text-primary hover:underline">
                               {item.document_title}
                             </Link>
                           </td>

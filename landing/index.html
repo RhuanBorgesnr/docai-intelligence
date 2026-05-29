@@ -802,7 +802,7 @@
                 <h2>Entre em Contato</h2>
                 <p>Fale conosco e descubra como podemos ajudar sua empresa</p>
             </div>
-            <form class="contact-form" action="https://formspree.io/f/YOUR_FORM_ID" method="POST">
+            <form class="contact-form" id="contactForm" onsubmit="return false;">
                 <div class="form-group">
                     <label for="name">Nome Completo</label>
                     <input type="text" id="name" name="name" required placeholder="Seu nome">
@@ -823,7 +823,8 @@
                     <label for="message">Mensagem</label>
                     <textarea id="message" name="message" placeholder="Conte-nos sobre suas necessidades..."></textarea>
                 </div>
-                <button type="submit" class="btn btn-primary">Enviar Mensagem</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">Enviar Mensagem</button>
+                <div id="formFeedback" style="margin-top:1rem; display:none;"></div>
             </form>
         </div>
     </section>
@@ -851,6 +852,61 @@
     </footer>
 
     <script>
+        // ── Real webhook integration ─────────────────────────────────────
+        // Point this to your actual backend (same domain or CORS-configured)
+        const API_BASE = window.location.hostname === 'localhost'
+            ? 'http://localhost:8000'
+            : '';  // same-origin in production
+
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const feedback = document.getElementById('formFeedback');
+
+            const payload = {
+                contact_name: document.getElementById('name').value.trim(),
+                contact_email: document.getElementById('email').value.trim(),
+                company_name: document.getElementById('company').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                message: document.getElementById('message').value.trim(),
+            };
+
+            if (!payload.contact_name || !payload.contact_email) {
+                feedback.style.display = 'block';
+                feedback.style.color = '#dc2626';
+                feedback.textContent = 'Preencha nome e e-mail.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Enviando…';
+            feedback.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/commercial/leads/webhook/landing_page/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    feedback.style.display = 'block';
+                    feedback.style.color = '#16a34a';
+                    feedback.innerHTML = '✅ <strong>Recebemos sua mensagem!</strong> Entraremos em contato em breve.';
+                    document.getElementById('contactForm').reset();
+                } else {
+                    throw new Error(data.error || 'Erro ao enviar');
+                }
+            } catch (err) {
+                feedback.style.display = 'block';
+                feedback.style.color = '#dc2626';
+                feedback.textContent = '❌ Erro ao enviar. Tente novamente ou entre em contato por WhatsApp.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Enviar Mensagem';
+            }
+        });
+
         // Smooth scroll
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {

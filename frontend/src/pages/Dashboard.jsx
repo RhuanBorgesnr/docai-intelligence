@@ -76,7 +76,7 @@ export default function Dashboard(){
           <h1 className="text-2xl font-semibold">Meus Documentos</h1>
           <p className="text-sm text-gray-500">Gerencie e pergunte sobre seus documentos</p>
         </div>
-        <Link to="/upload" className="btn">+ Upload</Link>
+        <Link to="/app/upload" className="btn">+ Upload</Link>
       </div>
 
       {/* Stats Cards */}
@@ -157,7 +157,7 @@ export default function Dashboard(){
                 <span>{d.title || (d.file && d.file.split('/').pop())}</span>
                 <div className="flex items-center gap-2">
                   {getExpirationBadge(d)}
-                  <Link to={`/chat/${d.id}`} className="text-primary hover:underline">Ver</Link>
+                  <Link to={`/app/chat/${d.id}`} className="text-primary hover:underline">Ver</Link>
                 </div>
               </div>
             ))}
@@ -207,16 +207,16 @@ export default function Dashboard(){
 
             <div className="mt-3 md:mt-0 flex items-center gap-2">
               {FINANCIAL_TYPES.includes(d.document_type) && d.processing_status === 'completed' && (
-                <Link to={`/indicators/${d.id}`} className="btn bg-blue-100 text-blue-700 hover:bg-blue-200">
+                <Link to={`/app/indicators/${d.id}`} className="btn bg-blue-100 text-blue-700 hover:bg-blue-200">
                   Indicadores
                 </Link>
               )}
               {d.document_type === 'contract' && d.processing_status === 'completed' && (
-                <Link to={`/clauses/${d.id}`} className="btn bg-purple-100 text-purple-700 hover:bg-purple-200">
+                <Link to={`/app/clauses/${d.id}`} className="btn bg-purple-100 text-purple-700 hover:bg-purple-200">
                   Cláusulas
                 </Link>
               )}
-              <Link to={`/chat/${d.id}`} className="btn">Abrir</Link>
+              <Link to={`/app/chat/${d.id}`} className="btn">Abrir</Link>
             </div>
           </div>
         ))}

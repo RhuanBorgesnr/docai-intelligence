@@ -131,7 +131,7 @@ export default function Compare() {
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link to="/" className="text-sm text-primary hover:underline">&larr; Voltar</Link>
+          <Link to="/app" className="text-sm text-primary hover:underline">&larr; Voltar</Link>
           <h1 className="text-2xl font-semibold mt-1">Comparativo de Períodos</h1>
           <p className="text-sm text-gray-500">Compare indicadores financeiros entre dois documentos</p>
         </div>
@@ -149,7 +149,7 @@ export default function Compare() {
       {!hasDocuments ? (
         <div className="card text-center py-12">
           <p className="text-gray-500 mb-4">Você precisa de pelo menos 2 documentos financeiros com indicadores extraídos.</p>
-          <Link to="/upload" className="btn">Fazer Upload</Link>
+          <Link to="/app/upload" className="btn">Fazer Upload</Link>
         </div>
       ) : (
         <>

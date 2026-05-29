@@ -370,13 +370,18 @@ def extract_and_save_metadata(document_id: int) -> dict:
         return {"status": "ok", "fields_count": 0}
 
     # Convert date objects to strings for JSON serialization
+    from decimal import Decimal
     for key, value in metadata.items():
         if hasattr(value, 'isoformat'):
             metadata[key] = value.isoformat()
+        elif isinstance(value, Decimal):
+            metadata[key] = float(value)
         elif isinstance(value, dict):
             for k, v in value.items():
                 if hasattr(v, 'isoformat'):
                     value[k] = v.isoformat()
+                elif isinstance(v, Decimal):
+                    value[k] = float(v)
 
     # Save to document
     document.extracted_metadata = metadata
@@ -393,4 +398,57 @@ def extract_and_save_metadata(document_id: int) -> dict:
     document.save(update_fields=["extracted_metadata", "expiration_date"])
 
     logger.info("Saved metadata with %d fields for document %s", len(metadata), document_id)
+
+    # --- ERP Auto-Sync Hook ---
+    # If it's an invoice and the tenant has an active ERP connection with auto_sync,
+    # trigger automatic sync to ERP (creates Conta a Pagar)
+    if extractor_type == "invoice" and metadata:
+        _trigger_erp_sync_if_configured(document, metadata)
+
     return {"status": "ok", "fields_count": len(metadata), "fields": list(metadata.keys())}
+
+
+def _trigger_erp_sync_if_configured(document, metadata: dict):
+    """
+    Check if tenant has an active ERP connection with auto_sync enabled.
+    If yes, dispatch async sync task for the extracted invoice.
+    """
+    try:
+        from integrations.models import ERPConnection
+        from integrations.tasks import task_sync_conta_pagar
+
+        # Find active connections with auto_sync for this tenant
+        tenant_id = getattr(document, 'tenant_id', None) or 'docai_internal'
+        connections = ERPConnection.objects.filter(
+            is_active=True,
+            is_circuit_open=False,
+            auto_sync=True,
+        )
+
+        if not connections.exists():
+            return
+
+        for conn in connections:
+            # Dispatch async sync (will go through approval if requires_approval=True)
+            extracted_data = {
+                'document_id': str(document.pk),
+                'numero_nf': metadata.get('numero_nf', ''),
+                'cnpj_emitente': metadata.get('cnpj_emitente', ''),
+                'razao_social_emitente': metadata.get('razao_social_emitente', ''),
+                'data_emissao': metadata.get('data_emissao', ''),
+                'data_vencimento': metadata.get('data_vencimento', metadata.get('data_emissao', '')),
+                'valor_total': metadata.get('valor_total', 0),
+                'descricao': f"NF {metadata.get('numero_nf', '')} - Doc #{document.pk}",
+            }
+            task_sync_conta_pagar.delay(
+                connection_id=str(conn.id),
+                extracted_data=extracted_data,
+                correlation_id=f"doc_{document.pk}",
+            )
+            logger.info(
+                "ERP sync dispatched: document %s → connection %s",
+                document.pk, conn.name,
+            )
+    except Exception as e:
+        # Never break document processing because of ERP sync failure
+        logger.warning("ERP auto-sync hook failed (non-critical): %s", str(e))
