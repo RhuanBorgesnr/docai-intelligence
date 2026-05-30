@@ -8,6 +8,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { auth } from '../services/api'
 import useDocumentStatus from '../hooks/useDocumentStatus'
+import NotificationBell from './NotificationBell'
 
 export default function ClientLayout({ children }) {
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -43,6 +44,7 @@ export default function ClientLayout({ children }) {
           <Link to="/app/compare" className="text-sm text-gray-600 hover:text-gray-900">Comparar</Link>
           <Link to="/app/settings" className="text-sm text-gray-600 hover:text-gray-900">Configurações</Link>
 
+          <NotificationBell />
           <UserMenu user={user} show={showUserMenu} setShow={setShowUserMenu} settingsPath="/app/settings" />
         </div>
       </nav>

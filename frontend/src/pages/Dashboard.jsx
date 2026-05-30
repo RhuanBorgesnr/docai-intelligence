@@ -3,6 +3,7 @@ import api from '../services/api'
 import { Link } from 'react-router-dom'
 import OnboardingWizard from '../components/OnboardingWizard'
 import { ProcessingPanel } from '../components/ProcessingBadge'
+import ProcessingBadge from '../components/ProcessingBadge'
 import useDocumentStatus from '../hooks/useDocumentStatus'
 
 const DOC_TYPES = [
@@ -37,6 +38,19 @@ export default function Dashboard(){
     () => !localStorage.getItem('docai_onboarding_complete')
   )
   const { processingDocs } = useDocumentStatus()
+
+  // Auto-refresh document list when any doc finishes processing
+  const processingIds = Object.keys(processingDocs)
+  const completedIds = processingIds.filter(id => 
+    processingDocs[id]?.status === 'completed'
+  )
+  useEffect(() => {
+    if (completedIds.length > 0) {
+      // Delay slightly so backend has time to update
+      const timer = setTimeout(() => loadData(), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [completedIds.join(',')])
 
   useEffect(()=>{
     loadData()
@@ -252,10 +266,21 @@ export default function Dashboard(){
               <div className="flex items-center gap-2">
                 <div className="text-lg font-medium">{d.title || (d.file && d.file.split('/').pop())}</div>
                 {getExpirationBadge(d)}
+                {/* Live processing badge from WebSocket */}
+                {processingDocs[d.id] && (
+                  <ProcessingBadge status={processingDocs[d.id]} />
+                )}
               </div>
               <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
                 <span className="px-2 py-0.5 bg-gray-100 rounded">{d.document_type_display || 'Outro'}</span>
-                <span>{d.processing_status || 'unknown'}</span>
+                {!processingDocs[d.id] && (
+                  <span className={d.processing_status === 'completed' 
+                    ? 'text-green-600' 
+                    : d.processing_status === 'failed' 
+                      ? 'text-red-600' 
+                      : ''
+                  }>{d.processing_status || 'unknown'}</span>
+                )}
                 {d.expiration_date && <span>Venc: {d.expiration_date}</span>}
               </div>
             </div>
