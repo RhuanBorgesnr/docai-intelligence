@@ -109,4 +109,10 @@ app.conf.beat_schedule = {
         'task': 'agent_runtime.routines.analyst_weekly_funnel',
         'schedule': crontab(minute=0, hour=8, day_of_week=1),
     },
+
+    # ── Infrastructure — Automated Database Backup ────────────────────────
+    'database-backup-daily': {
+        'task': 'core.tasks.backup_database',
+        'schedule': crontab(minute=0, hour=3),  # Daily at 3am
+    },
 }

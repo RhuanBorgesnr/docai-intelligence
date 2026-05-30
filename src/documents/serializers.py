@@ -90,8 +90,48 @@ class DocumentDetailSerializer(DocumentListSerializer):
 
 
 class DocumentUploadSerializer(serializers.ModelSerializer):
-    """Serializer for document upload."""
+    """Serializer for document upload with file validation."""
+
+    ALLOWED_EXTENSIONS = {
+        '.pdf', '.png', '.jpg', '.jpeg', '.xlsx', '.xls',
+        '.docx', '.doc', '.txt', '.csv',
+    }
+    ALLOWED_MIME_TYPES = {
+        'application/pdf',
+        'image/png', 'image/jpeg',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword',
+        'text/plain', 'text/csv',
+    }
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
     class Meta:
         model = Document
         fields = ("file", "title", "document_type", "reference_date", "expiration_date")
+
+    def validate_file(self, file):
+        import os
+
+        # Check file size
+        if file.size > self.MAX_FILE_SIZE:
+            raise serializers.ValidationError(
+                f"Arquivo muito grande ({file.size // (1024*1024)}MB). Máximo: 10MB."
+            )
+
+        # Check extension
+        ext = os.path.splitext(file.name)[1].lower()
+        if ext not in self.ALLOWED_EXTENSIONS:
+            raise serializers.ValidationError(
+                f"Extensão '{ext}' não permitida. "
+                f"Aceitas: {', '.join(sorted(self.ALLOWED_EXTENSIONS))}"
+            )
+
+        # Check MIME type
+        if file.content_type not in self.ALLOWED_MIME_TYPES:
+            raise serializers.ValidationError(
+                f"Tipo de arquivo '{file.content_type}' não permitido."
+            )
+
+        return file
